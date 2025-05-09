@@ -1,43 +1,106 @@
-Custom ELT Project
+# ELT Pipeline with Docker, Airflow, dbt & PostgreSQL
 
-This repository contains a custom Extract, Load, Transform (ELT) project that utilizes Docker and PostgreSQL to demonstrate a simple ELT process.
-Repository Structure
+This repository contains a **custom Extract, Load, Transform (ELT)** project that demonstrates a modular data pipeline using **Docker, PostgreSQL, Airflow, dbt**, and **cron jobs**. It showcases how multiple containers and tools can work together to simulate a real-world data engineering workflow.
 
-    docker-compose.yaml: This file contains the configuration for Docker Compose, which is used to orchestrate multiple Docker containers. It defines three services:
-        source_postgres: The source PostgreSQL database.
-        destination_postgres: The destination PostgreSQL database.
-        elt_script: The service that runs the ELT script.
+---
 
-    elt_script/Dockerfile: This Dockerfile sets up a Python environment and installs the PostgreSQL client. It also copies the ELT script into the container and sets it as the default command.
+## 🚀 Project Overview
 
-    elt_script/elt_script.py: This Python script performs the ELT process. It waits for the source PostgreSQL database to become available, then dumps its data to a SQL file and loads this data into the destination PostgreSQL database.
+The pipeline:
 
-    source_db_init/init.sql: This SQL script initializes the source database with sample data. It creates tables for users, films, film categories, actors, and film actors, and inserts sample data into these tables.
+* Extracts data from a source PostgreSQL database
+* Loads it into a destination PostgreSQL database
+* Applies transformations using **dbt**
+* Uses **cron jobs** and **Airflow** for automation and orchestration
 
-How It Works
+---
 
-    Docker Compose: Using the docker-compose.yaml file, three Docker containers are spun up:
-        A source PostgreSQL database with sample data.
-        A destination PostgreSQL database.
-        A Python environment that runs the ELT script.
+## 📁 Repository Structure
 
-    ELT Process: The elt_script.py waits for the source PostgreSQL database to become available. Once it's available, the script uses pg_dump to dump the source database to a SQL file. Then, it uses psql to load this SQL file into the destination PostgreSQL database.
+```
+.
+├── airflow/                  # Airflow DAGs and configs
+├── custom_postgres/         # Custom PostgreSQL configs (if any)
+├── elt_script/
+│   ├── Dockerfile           # Python environment for ELT
+│   └── elt_script.py        # Python script that performs ELT
+├── logs/                    # Log files
+├── source_db_init/
+│   └── init.sql             # SQL script to seed source PostgreSQL
+├── Dockerfile               # Base Dockerfile
+├── docker-compose.yaml      # Docker Compose setup
+├── elt.sh                   # Shell script to trigger ELT
+├── start.sh                 # Starts the containers
+├── stop.sh                  # Stops and cleans up
+└── README.md
+```
 
-    Database Initialization: The init.sql script initializes the source database with sample data. It creates several tables and populates them with sample data.
+---
 
-CRON Job Implementation
+## ⚙️ How It Works
 
-In this branch, a CRON job has been implemented to automate the ELT process. The CRON job is scheduled to run the ELT script at specified intervals, ensuring that the data in the destination PostgreSQL database is regularly updated with the latest data from the source database.
+### 1. **Container Orchestration**
 
-To configure the CRON job:
+Using `docker-compose.yaml`, three services are deployed:
 
-    Currently, the CRON job is setup to run every day at 3am.
-    You can adjust the time as needed within the Dockerfile found in the elt_script folder.
+* `source_postgres`: PostgreSQL container initialized with sample data
+* `destination_postgres`: Empty PostgreSQL container (ELT target)
+* `elt_script`: Runs Python-based ELT process
 
-Getting Started
+### 2. **ELT Process**
 
-    Ensure you have Docker and Docker Compose installed on your machine.
-    Clone this repository.
-    Navigate to the repository directory and run docker-compose up.
-    Once all containers are up and running, the ELT process will start automatically.
-    After the ELT process completes, you can access the source and destination PostgreSQL databases on ports 5433 and 5434, respectively.
+* **Extract**: `elt_script.py` connects to `source_postgres` and dumps the database using `pg_dump`
+* **Load**: The dump is loaded into `destination_postgres` using `psql`
+* **Transform**: dbt models (in `dbt/`) transform the loaded data
+
+### 3. **Database Initialization**
+
+* `init.sql` initializes the `source_postgres` container with tables:
+
+  * `users`, `films`, `categories`, `actors`, and relationships
+* Includes sample data for simulation
+
+---
+
+## ⏱️ Automation with Cron
+
+A **cron job** is configured to run the ELT script at scheduled intervals:
+
+* Keeps the destination database updated automatically
+* Useful for simulating regular data ingestion cycles
+
+---
+
+## 🌐 Airflow Orchestration
+
+In an extended version, **Apache Airflow** is used to:
+
+* Schedule and monitor ELT jobs
+* Chain tasks (e.g., extract → load → transform) with DAGs
+* Integrate with `dbt` and external sources (e.g., Aibyte)
+
+---
+
+## 📎 Requirements
+
+* Docker + Docker Compose
+* Python 3.x (within containers)
+* PostgreSQL client tools (`pg_dump`, `psql`)
+* dbt CLI (in future updates)
+
+---
+
+## ▶️ Running the Project
+
+```bash
+# Start the pipeline
+bash start.sh
+
+# Run the ELT manually
+bash elt.sh
+
+# Stop and clean up
+bash stop.sh
+```
+
+
